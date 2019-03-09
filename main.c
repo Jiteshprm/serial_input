@@ -19,7 +19,9 @@ typedef struct
     char uinput[256];
     uint32_t period;
     uint32_t delay;
-    
+    bool reset;         /* request reset at start */
+    bool debug;         /* enable debug*/
+
     uint16_t key_map[IR_MAX_KEYS_NUM];
 } configuration;
 
@@ -62,6 +64,24 @@ static int config_handler(void *ptr, const char *section, const char *name, cons
                 return 0;
             }
         }
+        else if (0 == strcmp(name, "reset"))
+        {
+            if (0 != strcmp(value, "1") && 0 != strcmp(value, "0"))
+            {
+                config_error(section, name, value);
+                return 0;
+            }
+            pconfig->reset = value[0] == '1' ? true : false;
+        }
+        else if (0 == strcmp(name, "debug"))
+        {
+            if (0 != strcmp(value, "1") && 0 != strcmp(value, "0"))
+            {
+                config_error(section, name, value);
+                return 0;
+            }
+            pconfig->debug = value[0] == '1' ? true : false;
+        }
     }
     else if (0 == strcmp(section, "keymap"))
     {
@@ -87,7 +107,6 @@ static int config_handler(void *ptr, const char *section, const char *name, cons
     }
     return 1;
 }
-
 
 static int output_rts(int fd, int val)
 {
@@ -136,7 +155,11 @@ static int set_interface_attribs(int fd, int speed)
         printf("Error from tcsetattr: %s\n", strerror(errno));
         return -1;
     }
-    
+
+    // give time to, data to arrive in to the read buffer
+    sleep(1);
+    tcflush(fd, TCIOFLUSH);
+
     output_rts(fd, 0);
     return 0;
 }
@@ -149,10 +172,9 @@ int main(int argc, char *argv[])
     char buf[36] = "";
     int rlen = 0;
     char ch = '\0';
-    bool debug = false;
     int32_t i = 0;
     char *config_file = "/etc/srcd.ini";
-    
+
     configuration config;
 
     memset(&config, 0x00, sizeof(config));
@@ -163,6 +185,13 @@ int main(int argc, char *argv[])
 
     if (argc > 1)
     {
+        if (0 == strcmp(argv[1], "--help"))
+        {
+            printf("Usage: \n");
+            printf("\t%s [path to config file] \n", argv[0]);
+            printf("\t\t path to config file - default: %s\n", config_file);
+            exit(0);
+        }
         config_file = argv[1];
     }
 
@@ -187,11 +216,6 @@ int main(int argc, char *argv[])
         printf("Please set serial in the config file!\n");
         return 2;
     }
-    
-    if (argc > 2 && 0 == strcmp(argv[2], "debug"))
-    {
-        debug = true;
-    }
 
     fd = open(config.serial, O_RDWR | O_NOCTTY | O_SYNC);
     while (fd < 0)
@@ -203,6 +227,12 @@ int main(int argc, char *argv[])
 
     /*baudrate B9600, 8 bits, no parity, 1 stop bit */
     set_interface_attribs(fd, B9600);
+
+    if (config.reset)
+    {
+        /* request reset at start */
+        write(fd, "RsT", 3);
+    }
 
     uinputfd = setup_uinputfd(config.uinput, config.name, config.key_map, config.delay, config.period);
     if (1 || uinputfd > -1)
@@ -229,7 +259,7 @@ int main(int argc, char *argv[])
                     if (rlen > 0)
                     {
                         buf[rlen] = '\0';
-                        if (debug)
+                        if (config.debug)
                         {
                             printf("%s\n", buf);
                         }
