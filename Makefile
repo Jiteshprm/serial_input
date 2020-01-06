@@ -1,7 +1,7 @@
 TARGET = srcd
 CC ?= gcc
 CFLAGS ?= -g -Wall
-LDFLAGS ?= -Wall
+LDFLAGS ?= -Wall -lrt
 
 .PHONY: default all clean
 

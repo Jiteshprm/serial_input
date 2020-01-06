@@ -20,7 +20,8 @@ typedef struct
     uint32_t period;
     uint32_t delay;
     bool reset;         /* request reset at start */
-    bool debug;         /* enable debug*/
+    bool debug;         /* enable debug */
+    bool power_confirm; /* power confirmation */
 
     uint16_t key_map[IR_MAX_KEYS_NUM];
 } configuration;
@@ -81,6 +82,15 @@ static int config_handler(void *ptr, const char *section, const char *name, cons
                 return 0;
             }
             pconfig->debug = value[0] == '1' ? true : false;
+        }
+        else if (0 == strcmp(name, "power_confirm"))
+        {
+            if (0 != strcmp(value, "1") && 0 != strcmp(value, "0"))
+            {
+                config_error(section, name, value);
+                return 0;
+            }
+            pconfig->power_confirm = value[0] == '1' ? true : false;
         }
     }
     else if (0 == strcmp(section, "keymap"))
@@ -225,8 +235,16 @@ int main(int argc, char *argv[])
         continue;
     }
 
+    uinputfd = setup_uinputfd(config.uinput, config.name, config.key_map, config.delay, config.period);
+
     /*baudrate B9600, 8 bits, no parity, 1 stop bit */
-    set_interface_attribs(fd, B9600);
+    set_interface_attribs(fd, B9600); //B1200
+
+    if (config.power_confirm)
+    {
+        /* confirm at start */
+        write(fd, "CCC", 3);
+    }
 
     if (config.reset)
     {
@@ -234,7 +252,6 @@ int main(int argc, char *argv[])
         write(fd, "RsT", 3);
     }
 
-    uinputfd = setup_uinputfd(config.uinput, config.name, config.key_map, config.delay, config.period);
     if (1 || uinputfd > -1)
     {
         while (1) 
@@ -263,7 +280,7 @@ int main(int argc, char *argv[])
                         {
                             printf("%s\n", buf);
                         }
-                        process_key_message(uinputfd, buf);
+                        process_key_message(uinputfd, buf, config.power_confirm ? fd : -1);
                     }
                     rlen = 0;
                 }

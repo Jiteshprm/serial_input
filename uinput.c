@@ -10,6 +10,8 @@
 #include <sys/stat.h>
 #include <sys/un.h>
 
+#include <sys/reboot.h>
+
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdbool.h>
@@ -17,6 +19,8 @@
 
 #include <linux/input.h>
 #include <linux/uinput.h>
+
+#include <time.h>
 
 #include "uinput.h"
 
@@ -119,8 +123,10 @@ int setup_uinputfd(const char *uinput_path, const char *event_dev_name, const ui
     return -1;
 }
 
-bool process_key_message(int uinputfd, char *message)
+bool process_key_message(int uinputfd, char *message, int serialfd)
 {
+    static struct timespec s_timestamp;
+
     bool bret = false;
     int key_code = -1;
     if (message)
@@ -130,6 +136,37 @@ bool process_key_message(int uinputfd, char *message)
             if (1 == sscanf(&message[2], "%d", &key_code) && key_code >= 0 && key_code <= 255)
             {
                 uint16_t event_code = key2event((uint8_t)key_code);
+
+                // handle KEY_POWER
+                if (event_code == 116)
+                {
+                    if (serialfd >= 0 && message[0] == 'P')
+                    {
+                        write(serialfd, "C", 1);
+                    }
+
+                    static struct timespec timestamp;
+                    clock_gettime(CLOCK_MONOTONIC, &timestamp);
+                    if (message[0] == 'P') // press
+                    {
+                        s_timestamp = timestamp;
+                    }
+                    else // release
+                    {
+                        int delta = (int)(timestamp.tv_sec - s_timestamp.tv_sec);
+                        if (delta >= 2 && delta < 10)
+                        {
+                            sync();
+                            system("/usr/bin/killall -9 enigma2");
+                        }
+                        else if (delta >= 10 && delta < 30)
+                        {
+                            sync();
+                            reboot(RB_AUTOBOOT);
+                        }
+                    }
+                }
+
                 bret = write_event(uinputfd, EV_KEY, event_code, message[0] == 'P' ? 1 : 0);
                 if (bret)
                 {
