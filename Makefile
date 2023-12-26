@@ -1,4 +1,4 @@
-TARGET = srcd
+TARGET = serialinput
 CC ?= gcc
 CFLAGS ?= -g -Wall
 LDFLAGS ?= -Wall -lrt
