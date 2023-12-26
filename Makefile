@@ -17,7 +17,7 @@ HEADERS = $(wildcard *.h) $(wildcard inih/*.h)
 .PRECIOUS: $(TARGET) $(OBJECTS)
 
 $(TARGET): $(OBJECTS)
-	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
+	$(CC) $(OBJECTS) $(LDFLAGS) -o $@ -lrt
 
 clean:
 	-rm -f *.o inih/*.o
