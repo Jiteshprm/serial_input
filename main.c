@@ -22,6 +22,23 @@ typedef struct
 
 typedef struct
 {
+    uint8_t pointer_address_h;
+    uint8_t pointer_address_l;
+    uint8_t b_flag;
+    uint8_t remote_command_1h;
+    uint8_t remote_command_1l;
+    uint8_t remote_command_0h;
+    uint8_t remote_command_1l;
+} samsung_ir_command_t;
+
+typedef union
+{
+    samsung_ir_command_t s;
+    uint8_t data[0];
+} samsung_ir_command_tu;
+
+typedef struct
+{
     char name[256];
     char serial[256];
     char uinput[256];
@@ -33,6 +50,7 @@ typedef struct
     bool check_avr_cfg;
 
     avr_config avr_cfg;
+    samsung_ir_command samsung_ir_cmd;
     uint16_t key_map[IR_MAX_KEYS_NUM];
 } configuration;
 
@@ -291,9 +309,9 @@ int main(int argc, char *argv[])
         strcpy(config.name, "ATtiny2313-uinput");
     }
 
-    if ('\0' == config.name[0])
+    if ('\0' == config.uinput[0])
     {
-        strcpy(config.name, "/dev/uinput");
+        strcpy(config.uinput, "/dev/uinput");
     }
 
     if ('\0' == config.serial[0])
@@ -313,19 +331,7 @@ int main(int argc, char *argv[])
     uinputfd = setup_uinputfd(config.uinput, config.name, config.key_map, config.delay, config.period);
 
     /*baudrate B9600, 8 bits, no parity, 1 stop bit */
-    set_interface_attribs(fd, B9600); //B1200
-
-    if (config.power_confirm)
-    {
-        /* confirm at start */
-        write(fd, "CCC", 3);
-    }
-
-    if (config.reset)
-    {
-        /* request reset at start */
-        write(fd, ".RsT", 4);
-    }
+    set_interface_attribs(fd, B115200); //B1200
 
     if (1 || uinputfd > -1)
     {
@@ -346,99 +352,33 @@ int main(int argc, char *argv[])
             } 
             else
             {
-                if (ch == '\n')
+                if (ch == 'S')
                 {
-                    if (rlen > 0)
+                    printf("Found S:\n");
+                    samsung_ir_command_tu samsung_ir_command;
+                    size_t rsize = 0;
+                    while (rsize < sizeof(samsung_ir_command))
                     {
-                        buf[rlen] = '\0';
-                        if (config.debug)
-                        {
-                            printf("%s\n", buf);
-                        }
-
-                        if (0 == strncmp(buf, "CfK", 3) || 0 == strncmp(buf, "CfO", 3))
-                        {
-                            write(fd, ".RsT", 4);
-                            config.check_avr_cfg = false;
-                        }
-                        else if (0 == strncmp(buf, "CfS", 3))
-                        {
-                            int i = 0;
-                            avr_cfg_t avr_cfg;
-                            avr_cfg.s.address_l = config.avr_cfg.address_l;
-                            avr_cfg.s.address_h = config.avr_cfg.address_h;
-                            avr_cfg.s.power_key = config.avr_cfg.power_key;
-                            avr_cfg.s.flags = config.avr_cfg.flags;
-                            avr_cfg.s.hash = 0xAA;
-                            for (i = 0; i < sizeof(avr_cfg)-1; ++i)
-                            {
-                                avr_cfg.s.hash ^= avr_cfg.data[i];
-                            }
-
-                            write(fd, avr_cfg.data, sizeof(avr_cfg));
-                        }
-                        else if (0 == strncmp(buf, "StArT", 5))
-                        {
-                            avr_cfg_t avr_cfg;
-                            size_t rsize = 0;
-                            while (rsize < sizeof(avr_cfg))
-                            {
-                                rsize += read(fd, avr_cfg.data + rsize, sizeof(avr_cfg) - rsize);
-                                usleep(100);
-                            }
-
-                            if (sizeof(avr_cfg) == rsize)
-                            {
-                                if (config.debug)
-                                {
-                                    uint8_t hash = 0xAA;
-                                    int i = 0;
-                                    for (i = 0; i < sizeof(avr_cfg)-1; ++i)
-                                    {
-                                        hash ^= avr_cfg.data[i];
-                                    }
-                            
-                                    printf("AVR config received:\n");
-                                    printf("\taddress_l:%hhu\n", avr_cfg.s.address_l);
-                                    printf("\taddress_h:%hhu\n", avr_cfg.s.address_h);
-                                    printf("\tpower_key:%hhu\n", avr_cfg.s.power_key);
-                                    printf("\tflags:%hhu\n", avr_cfg.s.flags);
-                                    printf("\thash:%hhu\n", avr_cfg.s.hash);
-                                    printf("\tcalc hash:%hhu\n", hash);
-                                }
-                                if (config.check_avr_cfg)
-                                {
-                                    if (config.avr_cfg.address_l != avr_cfg.s.address_l ||
-                                        config.avr_cfg.address_h != avr_cfg.s.address_h ||
-                                        config.avr_cfg.power_key != avr_cfg.s.power_key ||
-                                        config.avr_cfg.flags != avr_cfg.s.flags)
-                                    {
-                                        if (config.debug)
-                                        {
-                                            printf("AVR has wrong config try to set correct one!\n");
-                                            write(fd, ".CfG", 4);
-                                        }
-                                    }
-                                    //write(fd, "RsT", 3);
-                                }
-                            }
-                            else
-                                printf("WRONG CONFIG SIZE: %u, EXPECTED: %u\n", rsize, sizeof(avr_cfg));
-                        }
-                        else 
-                        {
-                            process_key_message(uinputfd, buf, config.power_confirm ? fd : -1);
-                        }
+                        rsize += read(fd, samsung_ir_command.data + rsize, sizeof(samsung_ir_command) - rsize);
+                        usleep(100);
                     }
-                    rlen = 0;
-                }
-                else
-                {
-                    if (rlen < (sizeof(buf)-2))
-                        buf[rlen++] = ch;
-                    else
-                        printf("Buffer overflow - skip char [%c]\n", ch);
-                }
+                    if (rsize > 0)
+                    {
+                        printf("Microchip IR Command received:\n");
+                        for(int i=0; i<rsize; i++){
+                            printf("\t data[%d]:%hhu\n", i, samsung_ir_command.data[i]);
+                        }
+                        printf("\tpointer_address_h:%hhu\n", samsung_ir_command.s.pointer_address_h);
+                        printf("\tpointer_address_l:%hhu\n", samsung_ir_command.s.pointer_address_l);
+                        printf("\tb_flag:%hhu\n", samsung_ir_command.s.b_flag);
+                        printf("\tremote_command_1h:%hhu\n", samsung_ir_command.s.remote_command_1h);
+                        printf("\tremote_command_1l:%hhu\n", samsung_ir_command.s.remote_command_1l);
+                        printf("\tremote_command_0h:%hhu\n", samsung_ir_command.s.remote_command_0h);
+                        printf("\tremote_command_1l:%hhu\n", samsung_ir_command.s.remote_command_1l);
+                     } else {
+                        printf("rsize=0\n");
+                     }
+                 }
             }
         }
     }
