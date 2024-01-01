@@ -28,7 +28,7 @@ typedef struct
     uint8_t remote_command_1h;
     uint8_t remote_command_1l;
     uint8_t remote_command_0h;
-    uint8_t remote_command_1l;
+    uint8_t remote_command_0l;
 } samsung_ir_command_t;
 
 typedef union
@@ -50,7 +50,6 @@ typedef struct
     bool check_avr_cfg;
 
     avr_config avr_cfg;
-    samsung_ir_command samsung_ir_cmd;
     uint16_t key_map[IR_MAX_KEYS_NUM];
 } configuration;
 
@@ -365,7 +364,8 @@ int main(int argc, char *argv[])
                     if (rsize > 0)
                     {
                         printf("Microchip IR Command received:\n");
-                        for(int i=0; i<rsize; i++){
+                        int i=0;
+                        for(i=0; i<rsize; i++){
                             printf("\t data[%d]:%hhu\n", i, samsung_ir_command.data[i]);
                         }
                         printf("\tpointer_address_h:%hhu\n", samsung_ir_command.s.pointer_address_h);
