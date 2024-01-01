@@ -10,7 +10,7 @@
 #include <time.h>
 
 #include "uinput.h"
-#include "inih/ini.h"
+//#include "inih/ini.h"
 
 typedef struct
 {
@@ -267,6 +267,49 @@ int main(int argc, char *argv[])
         config.key_map[i] = (uint16_t)-1; // set all event code's as UNKNOWN
     }
 
+config.key_map[0] = 2;      // KEY_1;
+config.key_map[1] = 3;      // KEY_2;
+config.key_map[2] = 4;      // KEY_3;
+config.key_map[3] = 5;      // KEY_4;
+config.key_map[4] = 6;      // KEY_5;
+config.key_map[5] = 7;      // KEY_6;
+config.key_map[6] = 8;      // KEY_7;
+config.key_map[7] = 9;      // KEY_8;
+config.key_map[8] = 10;     // KEY_9;
+config.key_map[9] = 11;     // KEY_0;
+config.key_map[10] = 115;   // KEY_VOLUMEUP;
+config.key_map[11] = 114;   // KEY_VOLUMEDOWN;
+config.key_map[12] = 402;   // KEY_CHANNELUP;
+config.key_map[13] = 403;   // KEY_CHANNELDOWN;
+config.key_map[16] = 103;   // KEY_UP;
+config.key_map[17] = 105;   // KEY_LEFT;
+config.key_map[18] = 108;   // KEY_DOWN;
+config.key_map[19] = 106;   // KEY_RIGHT;
+config.key_map[20] = 352;   // KEY_OK;
+config.key_map[21] = 174;   // KEY_EXIT;
+config.key_map[27] = 364;   // KEY_FAVORITES;
+config.key_map[30] = 116;   // KEY_POWER;
+config.key_map[32] = 113;   // KEY_MUTE;
+config.key_map[33] = 358;   // KEY_INFO;
+config.key_map[34] = 399;   // KEY_GREEN;
+config.key_map[35] = 400;   // KEY_YELLOW;
+config.key_map[36] = 401;   // KEY_BLUE;
+config.key_map[37] = 398;   // KEY_RED;
+config.key_map[38] = 139;   // KEY_MENU;
+config.key_map[43] = 377;   // KEY_TV;
+config.key_map[44] = 174;   // KEY_EXIT// //KEY_BACK;
+config.key_map[48] = 412;   // KEY_PREVIOUS;
+config.key_map[49] = 388;   // KEY_TEXT;
+config.key_map[52] = 370;   // KEY_SUBTITLE;
+config.key_map[54] = 395;   // KEY_LIST;
+config.key_map[55] = 365;   // KEY_EPG;
+config.key_map[56] = 392;   // KEY_AUDIO;
+config.key_map[69] = 168;   // KEY_REWIND;
+config.key_map[70] = 128;   // KEY_STOP;
+config.key_map[71] = 164;   // KEY_PLAYPAUSE;
+config.key_map[72] = 208;   // KEY_FASTFORWARD;
+config.key_map[74] = 167;   // KEY_RECORD;
+config.key_map[75] = 357;   // KEY_OPTION;
 
     if (argc > 1)
     {
@@ -277,174 +320,184 @@ int main(int argc, char *argv[])
             printf("\t\t path to config file - default: %s\n", config_file);
             exit(0);
         }
-        config_file = argv[1];
+        //config_file = argv[1];
+        printf("%s - command \n", argv[1]);
     }
 
-    if (ini_parse(config_file, config_handler, &config) < 0)
-    {
-        printf("Can't load \"%s\"\n", config_file);
-        return 1;
-    }
+//    if (ini_parse(config_file, config_handler, &config) < 0)
+//    {
+//        printf("Can't load \"%s\"\n", config_file);
+//        return 1;
+//    }
 
+printf(" Part1 \n");
     if ('\0' == config.name[0])
     {
         strcpy(config.name, "ATtiny2313-uinput");
     }
 
-    if ('\0' == config.name[0])
+    if ('\0' == config.uinput[0])
     {
-        strcpy(config.name, "/dev/uinput");
+        strcpy(config.uinput, "/dev/uinput");
     }
 
-    if ('\0' == config.serial[0])
-    {
-        printf("Please set serial in the config file!\n");
-        return 2;
-    }
+//    if ('\0' == config.serial[0])
+//    {
+//        printf("Please set serial in the config file!\n");
+//        return 2;
+//    }
 
-    fd = open(config.serial, O_RDWR | O_NOCTTY | O_SYNC);
-    while (fd < 0)
-    {
-        printf("Error opening %s: %s\n", config.serial, strerror(errno));
-        sleep(1);
-        continue;
-    }
+//    fd = open(config.serial, O_RDWR | O_NOCTTY | O_SYNC);
+//    while (fd < 0)
+//    {
+//        printf("Error opening %s: %s\n", config.serial, strerror(errno));
+//        sleep(1);
+//        continue;
+//    }
+printf(" Part2 \n");
+config.delay = 300
+config.period = 80
 
     uinputfd = setup_uinputfd(config.uinput, config.name, config.key_map, config.delay, config.period);
 
+printf(" Part3 \n");
     /*baudrate B9600, 8 bits, no parity, 1 stop bit */
-    set_interface_attribs(fd, B9600); //B1200
+//    set_interface_attribs(fd, B9600); //B1200
+//
+//    if (config.power_confirm)
+//    {
+//        /* confirm at start */
+//        write(fd, "CCC", 3);
+//    }
+//
+//    if (config.reset)
+//    {
+//        /* request reset at start */
+//        write(fd, ".RsT", 4);
+//    }
 
-    if (config.power_confirm)
-    {
-        /* confirm at start */
-        write(fd, "CCC", 3);
-    }
-
-    if (config.reset)
-    {
-        /* request reset at start */
-        write(fd, ".RsT", 4);
-    }
-
-    if (1 || uinputfd > -1)
-    {
-        while (1) 
-        {
-            read_ret = read(fd, &ch, 1);
-            if (read_ret == -1)
-            {
-                if (errno == EINTR)         /* Interrupted --> restart read() */
-                    continue;
-                else
-                    return -1;              /* Some other error */
-            }
-            else if (read_ret == 0)         /* EOF */
-            {
-                printf("EOF\n");
-                break;
-            } 
-            else
-            {
-                if (ch == '\n')
-                {
-                    if (rlen > 0)
-                    {
-                        buf[rlen] = '\0';
-                        if (config.debug)
-                        {
-                            printf("%s\n", buf);
-                        }
-
-                        if (0 == strncmp(buf, "CfK", 3) || 0 == strncmp(buf, "CfO", 3))
-                        {
-                            write(fd, ".RsT", 4);
-                            config.check_avr_cfg = false;
-                        }
-                        else if (0 == strncmp(buf, "CfS", 3))
-                        {
-                            int i = 0;
-                            avr_cfg_t avr_cfg;
-                            avr_cfg.s.address_l = config.avr_cfg.address_l;
-                            avr_cfg.s.address_h = config.avr_cfg.address_h;
-                            avr_cfg.s.power_key = config.avr_cfg.power_key;
-                            avr_cfg.s.flags = config.avr_cfg.flags;
-                            avr_cfg.s.hash = 0xAA;
-                            for (i = 0; i < sizeof(avr_cfg)-1; ++i)
-                            {
-                                avr_cfg.s.hash ^= avr_cfg.data[i];
-                            }
-
-                            write(fd, avr_cfg.data, sizeof(avr_cfg));
-                        }
-                        else if (0 == strncmp(buf, "StArT", 5))
-                        {
-                            avr_cfg_t avr_cfg;
-                            size_t rsize = 0;
-                            while (rsize < sizeof(avr_cfg))
-                            {
-                                rsize += read(fd, avr_cfg.data + rsize, sizeof(avr_cfg) - rsize);
-                                usleep(100);
-                            }
-
-                            if (sizeof(avr_cfg) == rsize)
-                            {
-                                if (config.debug)
-                                {
-                                    uint8_t hash = 0xAA;
-                                    int i = 0;
-                                    for (i = 0; i < sizeof(avr_cfg)-1; ++i)
-                                    {
-                                        hash ^= avr_cfg.data[i];
-                                    }
-                            
-                                    printf("AVR config received:\n");
-                                    printf("\taddress_l:%hhu\n", avr_cfg.s.address_l);
-                                    printf("\taddress_h:%hhu\n", avr_cfg.s.address_h);
-                                    printf("\tpower_key:%hhu\n", avr_cfg.s.power_key);
-                                    printf("\tflags:%hhu\n", avr_cfg.s.flags);
-                                    printf("\thash:%hhu\n", avr_cfg.s.hash);
-                                    printf("\tcalc hash:%hhu\n", hash);
-                                }
-                                if (config.check_avr_cfg)
-                                {
-                                    if (config.avr_cfg.address_l != avr_cfg.s.address_l ||
-                                        config.avr_cfg.address_h != avr_cfg.s.address_h ||
-                                        config.avr_cfg.power_key != avr_cfg.s.power_key ||
-                                        config.avr_cfg.flags != avr_cfg.s.flags)
-                                    {
-                                        if (config.debug)
-                                        {
-                                            printf("AVR has wrong config try to set correct one!\n");
-                                            write(fd, ".CfG", 4);
-                                        }
-                                    }
-                                    //write(fd, "RsT", 3);
-                                }
-                            }
-                            else
-                                printf("WRONG CONFIG SIZE: %u, EXPECTED: %u\n", rsize, sizeof(avr_cfg));
-                        }
-                        else 
-                        {
-                            process_key_message(uinputfd, buf, config.power_confirm ? fd : -1);
-                        }
-                    }
-                    rlen = 0;
-                }
-                else
-                {
-                    if (rlen < (sizeof(buf)-2))
-                        buf[rlen++] = ch;
-                    else
-                        printf("Buffer overflow - skip char [%c]\n", ch);
-                }
-            }
-        }
-    }
-    else
-    {
-        printf("setup_uinputfd failed\n");
-    }
+strcpy(buf, argv[1]);
+printf(" Part4 \n");
+process_key_message(uinputfd, buf, config.power_confirm ? fd : -1);
+printf(" Part5 \n");
+//    if (1 || uinputfd > -1)
+//    {
+//        while (1)
+//        {
+//            read_ret = read(fd, &ch, 1);
+//            if (read_ret == -1)
+//            {
+//                if (errno == EINTR)         /* Interrupted --> restart read() */
+//                    continue;
+//                else
+//                    return -1;              /* Some other error */
+//            }
+//            else if (read_ret == 0)         /* EOF */
+//            {
+//                printf("EOF\n");
+//                break;
+//            }
+//            else
+//            {
+//                if (ch == '\n')
+//                {
+//                    if (rlen > 0)
+//                    {
+//                        buf[rlen] = '\0';
+//                        if (config.debug)
+//                        {
+//                            printf("%s\n", buf);
+//                        }
+//
+//                        if (0 == strncmp(buf, "CfK", 3) || 0 == strncmp(buf, "CfO", 3))
+//                        {
+//                            write(fd, ".RsT", 4);
+//                            config.check_avr_cfg = false;
+//                        }
+//                        else if (0 == strncmp(buf, "CfS", 3))
+//                        {
+//                            int i = 0;
+//                            avr_cfg_t avr_cfg;
+//                            avr_cfg.s.address_l = config.avr_cfg.address_l;
+//                            avr_cfg.s.address_h = config.avr_cfg.address_h;
+//                            avr_cfg.s.power_key = config.avr_cfg.power_key;
+//                            avr_cfg.s.flags = config.avr_cfg.flags;
+//                            avr_cfg.s.hash = 0xAA;
+//                            for (i = 0; i < sizeof(avr_cfg)-1; ++i)
+//                            {
+//                                avr_cfg.s.hash ^= avr_cfg.data[i];
+//                            }
+//
+//                            write(fd, avr_cfg.data, sizeof(avr_cfg));
+//                        }
+//                        else if (0 == strncmp(buf, "StArT", 5))
+//                        {
+//                            avr_cfg_t avr_cfg;
+//                            size_t rsize = 0;
+//                            while (rsize < sizeof(avr_cfg))
+//                            {
+//                                rsize += read(fd, avr_cfg.data + rsize, sizeof(avr_cfg) - rsize);
+//                                usleep(100);
+//                            }
+//
+//                            if (sizeof(avr_cfg) == rsize)
+//                            {
+//                                if (config.debug)
+//                                {
+//                                    uint8_t hash = 0xAA;
+//                                    int i = 0;
+//                                    for (i = 0; i < sizeof(avr_cfg)-1; ++i)
+//                                    {
+//                                        hash ^= avr_cfg.data[i];
+//                                    }
+//
+//                                    printf("AVR config received:\n");
+//                                    printf("\taddress_l:%hhu\n", avr_cfg.s.address_l);
+//                                    printf("\taddress_h:%hhu\n", avr_cfg.s.address_h);
+//                                    printf("\tpower_key:%hhu\n", avr_cfg.s.power_key);
+//                                    printf("\tflags:%hhu\n", avr_cfg.s.flags);
+//                                    printf("\thash:%hhu\n", avr_cfg.s.hash);
+//                                    printf("\tcalc hash:%hhu\n", hash);
+//                                }
+//                                if (config.check_avr_cfg)
+//                                {
+//                                    if (config.avr_cfg.address_l != avr_cfg.s.address_l ||
+//                                        config.avr_cfg.address_h != avr_cfg.s.address_h ||
+//                                        config.avr_cfg.power_key != avr_cfg.s.power_key ||
+//                                        config.avr_cfg.flags != avr_cfg.s.flags)
+//                                    {
+//                                        if (config.debug)
+//                                        {
+//                                            printf("AVR has wrong config try to set correct one!\n");
+//                                            write(fd, ".CfG", 4);
+//                                        }
+//                                    }
+//                                    //write(fd, "RsT", 3);
+//                                }
+//                            }
+//                            else
+//                                printf("WRONG CONFIG SIZE: %u, EXPECTED: %u\n", rsize, sizeof(avr_cfg));
+//                        }
+//                        else
+//                        {
+//                            process_key_message(uinputfd, buf, config.power_confirm ? fd : -1);
+//                        }
+//                    }
+//                    rlen = 0;
+//                }
+//                else
+//                {
+//                    if (rlen < (sizeof(buf)-2))
+//                        buf[rlen++] = ch;
+//                    else
+//                        printf("Buffer overflow - skip char [%c]\n", ch);
+//                }
+//            }
+//        }
+//    }
+//    else
+//    {
+//        printf("setup_uinputfd failed\n");
+//    }
     return 0;
 }

@@ -133,44 +133,54 @@ bool process_key_message(int uinputfd, char *message, int serialfd)
     {
         if (strlen(message) > 2 && (message[0] == 'P' || message[0] == 'R'))
         {
+        printf("code message[%s]\n", message);
             if (1 == sscanf(&message[2], "%d", &key_code) && key_code >= 0 && key_code <= 255)
             {
+            printf("code key_code[%d] message[%s]\n", key_code, message);
                 uint16_t event_code = key2event((uint8_t)key_code);
-
+                //uint16_t event_code = ((uint16_t)key_code);
+printf("code key_code[%d] message[%s] event_code[%d]\n", key_code, message,event_code);
                 // handle KEY_POWER
-                if (event_code == 116)
-                {
-                    if (serialfd >= 0 && message[0] == 'P')
-                    {
-                        write(serialfd, "C", 1);
-                    }
-
-                    static struct timespec timestamp;
-                    clock_gettime(CLOCK_MONOTONIC, &timestamp);
-                    if (message[0] == 'P') // press
-                    {
-                        s_timestamp = timestamp;
-                    }
-                    else // release
-                    {
-                        int delta = (int)(timestamp.tv_sec - s_timestamp.tv_sec);
-                        if (delta >= 2 && delta < 10)
-                        {
-                            sync();
-                            system("/usr/bin/killall -9 enigma2");
-                        }
-                        else if (delta >= 10 && delta < 30)
-                        {
-                            sync();
-                            reboot(RB_AUTOBOOT);
-                        }
-                    }
-                }
+//                if (event_code == 116)
+//                {
+//                    if (serialfd >= 0 && message[0] == 'P')
+//                    {
+//                        write(serialfd, "C", 1);
+//                    }
+//
+//                    static struct timespec timestamp;
+//                    clock_gettime(CLOCK_MONOTONIC, &timestamp);
+//                    if (message[0] == 'P') // press
+//                    {
+//                        s_timestamp = timestamp;
+//                    }
+//                    else // release
+//                    {
+//                        int delta = (int)(timestamp.tv_sec - s_timestamp.tv_sec);
+//                        if (delta >= 2 && delta < 10)
+//                        {
+//                            sync();
+//                            system("/usr/bin/killall -9 enigma2");
+//                        }
+//                        else if (delta >= 10 && delta < 30)
+//                        {
+//                            sync();
+//                            reboot(RB_AUTOBOOT);
+//                        }
+//                    }
+//                }
 
                 bret = write_event(uinputfd, EV_KEY, event_code, message[0] == 'P' ? 1 : 0);
                 if (bret)
                 {
+                printf("write_event EV_KEY OK\n");
                     bret = bret && write_event(uinputfd, EV_SYN, SYN_REPORT, 0);
+                    if (bret)
+                    {
+                    printf("write_event 2 EV_KEY OK\n");
+                    } else {
+                    printf("write_event 2 EV_KEY failed\n");
+                    }
                 }
                 else
                 {
