@@ -51,6 +51,7 @@ typedef struct
 
     avr_config avr_cfg;
     uint16_t key_map[IR_MAX_KEYS_NUM];
+    uint32_t ir_key_map[IR_MAX_KEYS_NUM];
 } configuration;
 
 typedef struct {
@@ -202,6 +203,24 @@ static int config_handler(void *ptr, const char *section, const char *name, cons
             return 0;
         }
     }
+    else if (0 == strcmp(section, "irkeymap"))
+    {
+        int32_t key_code = -1;
+        sscanf(name, "%d", &key_code);
+        if (key_code >= 0 && key_code < IR_MAX_KEYS_NUM)
+        {
+            if (0 == sscanf(value, "0x%X", pconfig->ir_key_map[key_code]))
+            {
+                config_error(section, name, value);
+                return 0;
+            }
+        }
+        else
+        {
+            config_error(section, name, value);
+            return 0;
+        }
+    }
     else
     {
         return 0;  /* unknown section/name, error */
@@ -265,6 +284,18 @@ static int set_interface_attribs(int fd, int speed)
     return 0;
 }
 
+static int find_ir_key_map(const uint32_t ir_key_map[IR_MAX_KEYS_NUM], int received_command)
+{
+    int i;
+    for (i=0; i < IR_MAX_KEYS_NUM; ++i)
+    {
+        if (ir_key_map[i] == (uint32_t)received_command){
+            return i;
+        }
+    }
+    return -1;
+}
+
 int main(int argc, char *argv[])
 {
     ssize_t read_ret = 0;
@@ -275,6 +306,8 @@ int main(int argc, char *argv[])
     char ch = '\0';
     int32_t i = 0;
     char *config_file = "/etc/srcd.ini";
+    unsigned int databuffer = 0;
+    int key_code=0;
 
     configuration config;
 
@@ -365,16 +398,26 @@ int main(int argc, char *argv[])
                     {
                         printf("Microchip IR Command received:\n");
                         int i=0;
+                        printf("\tBuffer: ");
                         for(i=0; i<rsize; i++){
-                            printf("\t data[%d]:%hhu\n", i, samsung_ir_command.data[i]);
+                            printf("\tdata[%d]:%hhX\n", i, samsung_ir_command.data[i]);
                         }
-                        printf("\tpointer_address_h:%hhu\n", samsung_ir_command.s.pointer_address_h);
-                        printf("\tpointer_address_l:%hhu\n", samsung_ir_command.s.pointer_address_l);
-                        printf("\tb_flag:%hhu\n", samsung_ir_command.s.b_flag);
-                        printf("\tremote_command_1h:%hhu\n", samsung_ir_command.s.remote_command_1h);
-                        printf("\tremote_command_1l:%hhu\n", samsung_ir_command.s.remote_command_1l);
-                        printf("\tremote_command_0h:%hhu\n", samsung_ir_command.s.remote_command_0h);
-                        printf("\tremote_command_1l:%hhu\n", samsung_ir_command.s.remote_command_1l);
+                        printf("\n");
+                        printf("\tpointer_address_h:%hhX\n", samsung_ir_command.s.pointer_address_h);
+                        printf("\tpointer_address_l:%hhX\n", samsung_ir_command.s.pointer_address_l);
+                        printf("\tb_flag:%hhX\n", samsung_ir_command.s.b_flag);
+                        printf("\tremote_command_1h:%hhX\n", samsung_ir_command.s.remote_command_1h);
+                        printf("\tremote_command_1l:%hhX\n", samsung_ir_command.s.remote_command_1l);
+                        printf("\tremote_command_0h:%hhX\n", samsung_ir_command.s.remote_command_0h);
+                        printf("\tremote_command_1l:%hhX\n", samsung_ir_command.s.remote_command_0l);
+                        databuffer = samsung_ir_command.s.remote_command_1h << 24 | samsung_ir_command.s.remote_command_1l << 16 | samsung_ir_command.s.remote_command_0h << 8 | samsung_ir_command.s.remote_command_0l
+                        printf("\tdatabuffer:%X\n", databuffer);
+                        key_code = find_ir_key_map
+                        if (key_code >= 0){
+                            printf("key_code found = %d\n", key_code);
+                        } else {
+                            printf("Error retrieving key_code\n");
+                        }
                      } else {
                         printf("rsize=0\n");
                      }
