@@ -310,6 +310,10 @@ int main(int argc, char *argv[])
     int key_code=0;
     char pressed[1] = "P";
     char released[1] = "R";
+    fd_set set;
+    struct timeval timeout;
+    bool needs_release=false;
+    int last_key_code;
 
     configuration config;
 
@@ -354,7 +358,7 @@ int main(int argc, char *argv[])
         return 2;
     }
 
-    fd = open(config.serial, O_RDWR | O_NOCTTY | O_SYNC);
+    fd = open(config.serial, O_RDWR | O_NOCTTY | O_SYNC | O_NONBLOCK);
     while (fd < 0)
     {
         printf("Error opening %s: %s\n", config.serial, strerror(errno));
@@ -371,61 +375,82 @@ int main(int argc, char *argv[])
     {
         while (1) 
         {
-            read_ret = read(fd, &ch, 1);
-            printf("Test");
-            if (read_ret == -1)
-            {
-                if (errno == EINTR)         /* Interrupted --> restart read() */
-                    continue;
-                else
-                    return -1;              /* Some other error */
-            }
-            else if (read_ret == 0)         /* EOF */
-            {
-                printf("EOF\n");
+            FD_ZERO(&set);
+            FD_SET(fd, &set);
+
+            timeout.tv_sec = 0;
+            timeout.tv_usec = 500000;
+            int ready = select(fd + 1, &set, NULL, NULL, &timeout);
+
+            if (ready == -1) {
+                perror("Error from select");
                 break;
-            } 
-            else
-            {
-                if (ch == 'S')
-                {
-                    printf("Found S:\n");
-                    samsung_ir_command_tu samsung_ir_command;
-                    size_t rsize = 0;
-                    while (rsize < sizeof(samsung_ir_command))
+            } else if (ready == 0) {
+                printf("Timeout occurred, no data received.\n");
+                if (needs_release){
+                    printf("Released %d.\n", last_key_code);
+                    process_key_message(uinputfd, released, last_key_code);
+                }
+            } else {
+                if (FD_ISSET(fd, &set)) {
+                    read_ret = read(fd, &ch, 1);
+                    if (read_ret == -1)
                     {
-                        rsize += read(fd, samsung_ir_command.data + rsize, sizeof(samsung_ir_command) - rsize);
-                        usleep(100);
+                        if (errno == EINTR)         /* Interrupted --> restart read() */
+                            continue;
+                        else
+                            return -1;              /* Some other error */
                     }
-                    if (rsize > 0)
+                    else if (read_ret == 0)         /* EOF */
                     {
-                        printf("Microchip IR Command received:\n");
-                        int i=0;
-                        printf("\tBuffer: \n");
-                        for(i=0; i<rsize; i++){
-                            printf("\tdata[%d]: %hhX\n", i, samsung_ir_command.data[i]);
-                        }
-                        printf("\n");
-                        printf("\tpointer_address_h: %hhX\n", samsung_ir_command.s.pointer_address_h);
-                        printf("\tpointer_address_l: %hhX\n", samsung_ir_command.s.pointer_address_l);
-                        printf("\tb_flag: %hhX\n", samsung_ir_command.s.b_flag);
-                        printf("\tremote_command_1h: %hhX\n", samsung_ir_command.s.remote_command_1h);
-                        printf("\tremote_command_1l: %hhX\n", samsung_ir_command.s.remote_command_1l);
-                        printf("\tremote_command_0h: %hhX\n", samsung_ir_command.s.remote_command_0h);
-                        printf("\tremote_command_1l: %hhX\n", samsung_ir_command.s.remote_command_0l);
-                        databuffer = samsung_ir_command.s.remote_command_1h << 24 | samsung_ir_command.s.remote_command_1l << 16 | samsung_ir_command.s.remote_command_0h << 8 | samsung_ir_command.s.remote_command_0l;
-                        printf("\tdatabuffer: 0x%X\n", databuffer);
-                        key_code = find_ir_key_map(config.ir_key_map,databuffer);
-                        if (key_code >= 0){
-                            printf("\tkey_code found = %d\n", key_code);
-                            process_key_message(uinputfd, pressed, key_code);
-                        } else {
-                            printf("\tError retrieving key_code\n");
-                        }
-                     } else {
-                        printf("rsize=0\n");
-                     }
-                 }
+                        printf("EOF\n");
+                        break;
+                    }
+                    else
+                    {
+                        if (ch == 'S')
+                        {
+                            printf("Found S:\n");
+                            samsung_ir_command_tu samsung_ir_command;
+                            size_t rsize = 0;
+                            while (rsize < sizeof(samsung_ir_command))
+                            {
+                                rsize += read(fd, samsung_ir_command.data + rsize, sizeof(samsung_ir_command) - rsize);
+                                usleep(100);
+                            }
+                            if (rsize > 0)
+                            {
+                                printf("Microchip IR Command received:\n");
+                                int i=0;
+                                printf("\tBuffer: \n");
+                                for(i=0; i<rsize; i++){
+                                    printf("\tdata[%d]: %hhX\n", i, samsung_ir_command.data[i]);
+                                }
+                                printf("\n");
+                                printf("\tpointer_address_h: %hhX\n", samsung_ir_command.s.pointer_address_h);
+                                printf("\tpointer_address_l: %hhX\n", samsung_ir_command.s.pointer_address_l);
+                                printf("\tb_flag: %hhX\n", samsung_ir_command.s.b_flag);
+                                printf("\tremote_command_1h: %hhX\n", samsung_ir_command.s.remote_command_1h);
+                                printf("\tremote_command_1l: %hhX\n", samsung_ir_command.s.remote_command_1l);
+                                printf("\tremote_command_0h: %hhX\n", samsung_ir_command.s.remote_command_0h);
+                                printf("\tremote_command_1l: %hhX\n", samsung_ir_command.s.remote_command_0l);
+                                databuffer = samsung_ir_command.s.remote_command_1h << 24 | samsung_ir_command.s.remote_command_1l << 16 | samsung_ir_command.s.remote_command_0h << 8 | samsung_ir_command.s.remote_command_0l;
+                                printf("\tdatabuffer: 0x%X\n", databuffer);
+                                key_code = find_ir_key_map(config.ir_key_map,databuffer);
+                                if (key_code >= 0){
+                                    printf("\tkey_code found = %d\n", key_code);
+                                    process_key_message(uinputfd, pressed, key_code);
+                                    needs_release = true;
+                                    last_key_code = key_code;
+                                } else {
+                                    printf("\tError retrieving key_code\n");
+                                }
+                             } else {
+                                printf("rsize=0\n");
+                             }
+                         }
+                    }
+                }
             }
         }
     }
