@@ -410,7 +410,7 @@ int main(int argc, char *argv[])
                         printf("\tremote_command_1l:%hhX\n", samsung_ir_command.s.remote_command_1l);
                         printf("\tremote_command_0h:%hhX\n", samsung_ir_command.s.remote_command_0h);
                         printf("\tremote_command_1l:%hhX\n", samsung_ir_command.s.remote_command_0l);
-                        databuffer = samsung_ir_command.s.remote_command_1h << 24 | samsung_ir_command.s.remote_command_1l << 16 | samsung_ir_command.s.remote_command_0h << 8 | samsung_ir_command.s.remote_command_0l
+                        databuffer = samsung_ir_command.s.remote_command_1h << 24 | samsung_ir_command.s.remote_command_1l << 16 | samsung_ir_command.s.remote_command_0h << 8 | samsung_ir_command.s.remote_command_0l;
                         printf("\tdatabuffer:%X\n", databuffer);
                         key_code = find_ir_key_map(config.ir_key_map,databuffer);
                         if (key_code >= 0){
