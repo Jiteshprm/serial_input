@@ -386,7 +386,7 @@ int main(int argc, char *argv[])
                 perror("Error from select");
                 break;
             } else if (ready == 0) {
-                printf("Timeout occurred, no data received.\n");
+                //printf("Timeout occurred, no data received.\n");
                 if (needs_release){
                     printf("Released %d.\n", last_key_code);
                     process_key_message(uinputfd, released, last_key_code);
@@ -443,7 +443,7 @@ int main(int argc, char *argv[])
                                     process_key_message(uinputfd, pressed, key_code);
                                     //needs_release = true;
                                     //last_key_code = key_code;
-                                    usleep(500);
+                                    usleep(100);
                                     process_key_message(uinputfd, released, key_code);
                                 } else {
                                     printf("\tError retrieving key_code\n");
