@@ -209,7 +209,7 @@ static int config_handler(void *ptr, const char *section, const char *name, cons
         sscanf(name, "%d", &key_code);
         if (key_code >= 0 && key_code < IR_MAX_KEYS_NUM)
         {
-            if (0 == sscanf(value, "0x%X", pconfig->ir_key_map[key_code]))
+            if (0 == sscanf(value, "0x%X", &pconfig->ir_key_map[key_code]))
             {
                 config_error(section, name, value);
                 return 0;
