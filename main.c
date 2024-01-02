@@ -390,6 +390,7 @@ int main(int argc, char *argv[])
                 if (needs_release){
                     printf("Released %d.\n", last_key_code);
                     process_key_message(uinputfd, released, last_key_code);
+                    needs_release=false;
                 }
             } else {
                 if (FD_ISSET(fd, &set)) {
@@ -440,8 +441,10 @@ int main(int argc, char *argv[])
                                 if (key_code >= 0){
                                     printf("\tkey_code found = %d\n", key_code);
                                     process_key_message(uinputfd, pressed, key_code);
-                                    needs_release = true;
-                                    last_key_code = key_code;
+                                    //needs_release = true;
+                                    //last_key_code = key_code;
+                                    usleep(500);
+                                    process_key_message(uinputfd, released, key_code);
                                 } else {
                                     printf("\tError retrieving key_code\n");
                                 }
