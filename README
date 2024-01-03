@@ -1,0 +1,39 @@
+New build serialinput
+
+cd ~/openvuplus
+/usr/bin/git fetch
+/usr/bin/git pull
+cd build/vusolo2
+source bitbake.env
+
+bitbake -ccleansstate serialinput
+bitbake -c clean serialinput
+bitbake -f -c compile serialinput
+bitbake serialinput
+
+
+ls -lart tmp/work/mips32el-oe-linux/serialinput/serialinput-1.0-r0/git/serialinput
+file tmp/work/mips32el-oe-linux/serialinput/serialinput-1.0-r0/git/serialinput
+tmp/work/mips32el-oe-linux/serialinput/serialinput-1.0-r0/git/serialinput: ELF 32-bit LSB executable, MIPS, MIPS32 version 1, dynamically linked (uses shared libs), for GNU/Linux 2.6.16, with unknown capability 0xf41 = 0x756e6700, with unknown capability 0x70100 = 0x1040000, not stripped
+
+on 192.168.1.20:
+
+scp birdofprey@192.168.1.220:/home/birdofprey/openvuplus/build/vusolo2/tmp/work/mips32el-oe-linux/serialinput/serialinput-1.0-r0/git/serialinput .
+scp serialinput root@192.168.1.78:.
+
+
+------------------
+https://copyprogramming.com/howto/linux-uinput-simple-example
+https://forums.openpli.org/topic/60304-external-ir-receiver-to-which-will-alow-you-to-use-others-remote-controls/
+-------------------
+https://www.openembedded.org/wiki/Bitbake_cheat_sheet
+https://blog.videgro.net/2013/05/how-to-compile-software-for-vu-plus/
+--------
+http://www.hifi-remote.com/forums/viewtopic.php?t=14733
+https://github.com/e2iplayer/serial_input/tree/master
+https://github.com/torvalds/linux/blob/master/include/uapi/linux/input-event-codes.h
+https://github.com/e2iplayer/avr_fastboot
+https://github.com/openatv/enigma2/blob/6.4/keyids.py
+https://neutrino-images.de/neutrino-images/archives/
+---------
+https://rusticengineering.wordpress.com/2011/02/09/infrared-room-control-with-samsung-ir-protocol/
