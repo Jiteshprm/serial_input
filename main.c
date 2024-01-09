@@ -52,6 +52,7 @@ typedef struct
     avr_config avr_cfg;
     uint16_t key_map[IR_MAX_KEYS_NUM];
     uint32_t ir_key_map[IR_MAX_KEYS_NUM];
+    uint32_t release_time;
 } configuration;
 
 typedef struct {
@@ -143,6 +144,14 @@ static int config_handler(void *ptr, const char *section, const char *name, cons
         else if (0 == strcmp(name, "delay"))
         {
             if (0 == sscanf(value, "%u", &(pconfig->delay)))
+            {
+                config_error(section, name, value);
+                return 0;
+            }
+        }
+        else if (0 == strcmp(name, "release_time"))
+        {
+            if (0 == sscanf(value, "%u", &(pconfig->release_time)))
             {
                 config_error(section, name, value);
                 return 0;
@@ -418,7 +427,8 @@ int main(int argc, char *argv[])
                         if (key_code >= 0){
                             printf("\tkey_code found = %d\n", key_code);
                             process_key_message(uinputfd, pressed, key_code);
-                            usleep(300);
+                            printf("\trelease_time found = %d\n", release_time);
+                            usleep(release_time);
                             process_key_message(uinputfd, released, key_code);
                         } else {
                             printf("\tError retrieving key_code\n");
