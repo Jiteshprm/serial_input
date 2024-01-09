@@ -427,8 +427,8 @@ int main(int argc, char *argv[])
                         if (key_code >= 0){
                             printf("\tkey_code found = %d\n", key_code);
                             process_key_message(uinputfd, pressed, key_code);
-                            printf("\trelease_time found = %d\n", release_time);
-                            usleep(release_time);
+                            printf("\trelease_time found = %d\n", config.release_time);
+                            usleep(config.release_time);
                             process_key_message(uinputfd, released, key_code);
                         } else {
                             printf("\tError retrieving key_code\n");
