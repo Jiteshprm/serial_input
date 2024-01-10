@@ -395,11 +395,6 @@ int main(int argc, char *argv[])
 
     config.time_between_buttons = 0;
 
-  struct timeval current_time;
-  gettimeofday(&current_time, NULL);
-  printf("seconds : %ld\nmicro seconds : %ld",
-    current_time.tv_sec, current_time.tv_usec);
-
     if ('\0' == config.name[0])
     {
         strcpy(config.name, "ATtiny2313-uinput");
@@ -482,9 +477,11 @@ int main(int argc, char *argv[])
                             // Get the current time in milliseconds
                             struct timeval tv;
                             gettimeofday(&tv,NULL);
-                            uint64_t timeInMilliseconds = (1000000*tv.tv_sec) + tv.tv_usec;
+                            printf("\tseconds : %ld micro seconds : %ld\n", tv.tv_sec, tv.tv_usec);
 
-                            uint64_t time_difference = timeInMilliseconds - config.previous_command_timestamp;
+                            uint32_t timeInMilliseconds = (1000000*tv.tv_sec) + tv.tv_usec;
+
+                            uint32_t time_difference = timeInMilliseconds - config.previous_command_timestamp;
                             // Display the result
                             printf("\tCurrent time in milliseconds: %lu, time_difference: %lu, can_repeat: %s\n", timeInMilliseconds, time_difference, can_repeat ? "true" : "false");
 
