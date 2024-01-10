@@ -395,6 +395,11 @@ int main(int argc, char *argv[])
 
     config.time_between_buttons = 0;
 
+  struct timeval current_time;
+  gettimeofday(&current_time, NULL);
+  printf("seconds : %ld\nmicro seconds : %ld",
+    current_time.tv_sec, current_time.tv_usec);
+
     if ('\0' == config.name[0])
     {
         strcpy(config.name, "ATtiny2313-uinput");
