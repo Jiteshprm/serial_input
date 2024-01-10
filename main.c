@@ -475,8 +475,11 @@ int main(int argc, char *argv[])
                         bool can_repeat = config.ir_repeat_key_map[key_code];
                         if (key_code >= 0){
                             // Get the current time in milliseconds
-                            unsigned long timeInMilliseconds = getCurrentTimeInMilliseconds();
-                            long time_difference = timeInMilliseconds-config.previous_command_timestamp;
+                            struct timeval tv;
+                            gettimeofday(&tv,NULL);
+                            unsigned long timeInMilliseconds = (1000000*tv.tv_sec) + tv.tv_usec;
+
+                            long time_difference = timeInMilliseconds - config.previous_command_timestamp;
                             // Display the result
                             printf("\tCurrent time in milliseconds: %lu, time_difference: %ld, can_repeat: %s\n", timeInMilliseconds, time_difference, can_repeat ? "true" : "false");
 
