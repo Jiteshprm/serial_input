@@ -387,13 +387,13 @@ int main(int argc, char *argv[])
         config_file = argv[1];
     }
 
+    config.previous_command_timestamp = 0;
+
     if (ini_parse(config_file, config_handler, &config) < 0)
     {
         printf("Can't load \"%s\"\n", config_file);
         return 1;
     }
-
-    config.time_between_buttons = 0;
 
     if ('\0' == config.name[0])
     {
