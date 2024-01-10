@@ -52,7 +52,10 @@ typedef struct
     avr_config avr_cfg;
     uint16_t key_map[IR_MAX_KEYS_NUM];
     uint32_t ir_key_map[IR_MAX_KEYS_NUM];
+    bool ir_repeat_key_map[IR_MAX_KEYS_NUM];
     uint32_t release_time;
+    unsigned long previous_command_timestamp=0;
+    long time_between_buttons;
 } configuration;
 
 typedef struct {
@@ -70,6 +73,15 @@ typedef union {
 } avr_cfg_t;
 
 int usleep(unsigned int);
+
+static unsigned long getCurrentTimeInMilliseconds() {
+    clock_t currentTime = clock();
+
+    // Convert clock ticks to milliseconds
+    unsigned long milliseconds = (currentTime * 1000) / CLOCKS_PER_SEC;
+
+    return milliseconds;
+}
 
 static void config_error(const char *section, const char *name, const char *value)
 {
@@ -157,6 +169,14 @@ static int config_handler(void *ptr, const char *section, const char *name, cons
                 return 0;
             }
         }
+        else if (0 == strcmp(name, "time_between_buttons"))
+        {
+            if (0 == sscanf(value, "%d", &(pconfig->time_between_buttons)))
+            {
+                config_error(section, name, value);
+                return 0;
+            }
+        }
         else if (0 == strcmp(name, "reset"))
         {
             if (0 != strcmp(value, "1") && 0 != strcmp(value, "0"))
@@ -222,6 +242,32 @@ static int config_handler(void *ptr, const char *section, const char *name, cons
             {
                 config_error(section, name, value);
                 return 0;
+            }
+        }
+        else
+        {
+            config_error(section, name, value);
+            return 0;
+        }
+    }
+    else if (0 == strcmp(section, "irrepeatkeymap"))
+    {
+        int32_t key_code = -1;
+        sscanf(name, "%d", &key_code);
+        if (key_code >= 0 && key_code < IR_MAX_KEYS_NUM)
+        {
+            int32_t value_int = -1;
+            if (0 == sscanf(value, "%d", &value_int))
+            {
+                config_error(section, name, value);
+                return 0;
+            } else {
+                // Check if the value is 0 or 1
+                if (value_int == 1) {
+                    pconfig->ir_repeat_key_map[key_code] = true;
+                } else {
+                    pconfig->ir_repeat_key_map[key_code] = false;
+                }
             }
         }
         else
@@ -424,12 +470,27 @@ int main(int argc, char *argv[])
                         databuffer = samsung_ir_command.s.remote_command_1h << 24 | samsung_ir_command.s.remote_command_1l << 16 | samsung_ir_command.s.remote_command_0h << 8 | samsung_ir_command.s.remote_command_0l;
                         printf("\tdatabuffer: 0x%X\n", databuffer);
                         key_code = find_ir_key_map(config.ir_key_map,databuffer);
+                        bool can_repeat = config.ir_repeat_key_map[key_code];
                         if (key_code >= 0){
-                            printf("\tkey_code found = %d\n", key_code);
-                            process_key_message(uinputfd, pressed, key_code);
-                            printf("\trelease_time found = %d\n", config.release_time);
-                            usleep(config.release_time);
-                            process_key_message(uinputfd, released, key_code);
+                            // Get the current time in milliseconds
+                            unsigned long timeInMilliseconds = getCurrentTimeInMilliseconds();
+                            long time_difference = timeInMilliseconds-config.previous_command_timestamp;
+                            // Display the result
+                            printf("\tCurrent time in milliseconds: %lu, time_difference: %ld, can_repeat: %s\n", timeInMilliseconds, time_difference, can_repeat ? "true" : "false");
+
+                            if (time_difference > config.time_between_buttons || can_repeat){
+                                printf("\tForward IR Command:\n", config.time_between_buttons);
+                                printf("\ttime_difference > %ld\n", config.time_between_buttons);
+                                printf("\tkey_code found = %d\n", key_code);
+                                process_key_message(uinputfd, pressed, key_code);
+                                printf("\trelease_time found = %d\n", config.release_time);
+                                usleep(config.release_time);
+                                process_key_message(uinputfd, released, key_code);
+                            } else {
+                                printf("\tBlocking IR Command:\n", config.time_between_buttons);
+                                printf("\ttime_difference < %ld\n", config.time_between_buttons);
+                            }
+                            config.previous_command_timestamp = timeInMilliseconds;
                         } else {
                             printf("\tError retrieving key_code\n");
                         }
