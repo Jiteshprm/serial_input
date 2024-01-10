@@ -55,7 +55,7 @@ typedef struct
     bool ir_repeat_key_map[IR_MAX_KEYS_NUM];
     uint32_t release_time;
     unsigned long previous_command_timestamp;
-    uint64_t time_between_buttons;
+    uint32_t time_between_buttons;
 } configuration;
 
 typedef struct {
@@ -171,7 +171,7 @@ static int config_handler(void *ptr, const char *section, const char *name, cons
         }
         else if (0 == strcmp(name, "time_between_buttons"))
         {
-            if (0 == sscanf(value, "%lu", &(pconfig->time_between_buttons)))
+            if (0 == sscanf(value, "%u", &(pconfig->time_between_buttons)))
             {
                 config_error(section, name, value);
                 return 0;
@@ -485,7 +485,7 @@ int main(int argc, char *argv[])
 
                             if (time_difference > config.time_between_buttons || can_repeat){
                                 printf("\tForward IR Command:\n");
-                                printf("\ttime_difference > %lu\n", config.time_between_buttons);
+                                printf("\ttime_difference > %u\n", config.time_between_buttons);
                                 printf("\tkey_code found = %d\n", key_code);
                                 process_key_message(uinputfd, pressed, key_code);
                                 printf("\trelease_time found = %d\n", config.release_time);
@@ -493,7 +493,7 @@ int main(int argc, char *argv[])
                                 process_key_message(uinputfd, released, key_code);
                             } else {
                                 printf("\tBlocking IR Command:\n");
-                                printf("\ttime_difference < %lu\n", config.time_between_buttons);
+                                printf("\ttime_difference < %u\n", config.time_between_buttons);
                             }
                             config.previous_command_timestamp = timeInMilliseconds;
                         } else {
