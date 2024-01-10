@@ -171,7 +171,7 @@ static int config_handler(void *ptr, const char *section, const char *name, cons
         }
         else if (0 == strcmp(name, "time_between_buttons"))
         {
-            if (0 == sscanf(value, "%d", &(pconfig->time_between_buttons)))
+            if (0 == sscanf(value, "%ld", &(pconfig->time_between_buttons)))
             {
                 config_error(section, name, value);
                 return 0;
@@ -484,7 +484,7 @@ int main(int argc, char *argv[])
                             printf("\tCurrent time in milliseconds: %lu, time_difference: %ld, can_repeat: %s\n", timeInMilliseconds, time_difference, can_repeat ? "true" : "false");
 
                             if (time_difference > config.time_between_buttons || can_repeat){
-                                printf("\tForward IR Command:\n", config.time_between_buttons);
+                                printf("\tForward IR Command:\n");
                                 printf("\ttime_difference > %ld\n", config.time_between_buttons);
                                 printf("\tkey_code found = %d\n", key_code);
                                 process_key_message(uinputfd, pressed, key_code);
@@ -492,7 +492,7 @@ int main(int argc, char *argv[])
                                 usleep(config.release_time);
                                 process_key_message(uinputfd, released, key_code);
                             } else {
-                                printf("\tBlocking IR Command:\n", config.time_between_buttons);
+                                printf("\tBlocking IR Command:\n");
                                 printf("\ttime_difference < %ld\n", config.time_between_buttons);
                             }
                             config.previous_command_timestamp = timeInMilliseconds;
