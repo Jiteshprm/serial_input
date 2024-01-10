@@ -54,7 +54,7 @@ typedef struct
     uint32_t ir_key_map[IR_MAX_KEYS_NUM];
     bool ir_repeat_key_map[IR_MAX_KEYS_NUM];
     uint32_t release_time;
-    unsigned long previous_command_timestamp=0;
+    unsigned long previous_command_timestamp;
     long time_between_buttons;
 } configuration;
 
@@ -392,6 +392,8 @@ int main(int argc, char *argv[])
         printf("Can't load \"%s\"\n", config_file);
         return 1;
     }
+
+    config.time_between_buttons = 0;
 
     if ('\0' == config.name[0])
     {
